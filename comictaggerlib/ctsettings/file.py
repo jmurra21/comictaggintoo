@@ -150,6 +150,22 @@ def md_options(parser: settngs.Manager) -> None:
     parser.add_setting("--apply-transform-on-import", default=False, action=argparse.BooleanOptionalAction)
     parser.add_setting("--apply-transform-on-bulk-operation", default=False, action=argparse.BooleanOptionalAction)
 
+    # ComicVine API Rate Limiter settings
+    parser.add_setting(
+        "comicvine_api_limit",
+        default=200,
+        type=int,
+        help="Maximum number of ComicVine API calls allowed within the specified time window",
+        cmdline=False,
+    )
+    parser.add_setting(
+        "comicvine_time_window",
+        default=60,
+        type=int,
+        help="Time window in minutes for the ComicVine API rate limit",
+        cmdline=False,
+    )
+
     parser.add_setting(
         "--remove-html-tables",
         default=False,

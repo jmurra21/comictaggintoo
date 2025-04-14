@@ -82,10 +82,10 @@ Accepts the following variables:
 {day}              (integer)
 {issue_count}      (integer)
 {volume}           (integer)
+{volume_count}     (integer)
 {genre}            (string)
 {language}         (string)
 {comments}         (string)
-{volume_count}     (integer)
 {critical_rating}  (float)
 {country}          (string)
 {alternate_series} (string)
@@ -150,6 +150,73 @@ class SettingsWindow(QtWidgets.QDialog):
         self.config = config
         self.talkers = talkers
         self.name = "Settings"
+
+        # Create ComicVine API Rate Limiter UI controls
+        self.cvRateLimiterGroup = QtWidgets.QGroupBox("ComicVine API Rate Limiter")
+        self.cvRateLimiterLayout = QtWidgets.QVBoxLayout()
+
+        # Add descriptive text
+        self.lblRateLimiterDesc = QtWidgets.QLabel(
+            "Control ComicVine API usage rate. This limits ComicTagger to a maximum number "
+            "of API calls within a specified time window.\n"
+            "Default: No more than 200 calls per 60 minutes."
+        )
+        self.lblRateLimiterDesc.setWordWrap(True)
+        self.cvRateLimiterLayout.addWidget(self.lblRateLimiterDesc)
+
+        # Create API Limit control with clear label
+        self.apiLimitLayout = QtWidgets.QHBoxLayout()
+        self.lblApiLimit = QtWidgets.QLabel("Maximum API Calls:")
+        self.apiLimitLayout.addWidget(self.lblApiLimit)
+
+        # Add slider and spinbox
+        self.apiLimitSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.apiLimitSlider.setMinimum(1)
+        self.apiLimitSlider.setMaximum(200)
+        self.apiLimitSlider.setTickPosition(QtWidgets.QSlider.TicksBelow)
+        self.apiLimitSlider.setTickInterval(20)
+        self.apiLimitLayout.addWidget(self.apiLimitSlider)
+
+        self.apiLimitSpinBox = QtWidgets.QSpinBox()
+        self.apiLimitSpinBox.setMinimum(1)
+        self.apiLimitSpinBox.setMaximum(200)
+        self.apiLimitLayout.addWidget(self.apiLimitSpinBox)
+
+        # Create Time Window control with clear label
+        self.timeWindowLayout = QtWidgets.QHBoxLayout()
+        self.lblTimeWindow = QtWidgets.QLabel("Time Window (minutes):")
+        self.timeWindowLayout.addWidget(self.lblTimeWindow)
+
+        # Add slider and spinbox
+        self.timeWindowSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.timeWindowSlider.setMinimum(1)
+        self.timeWindowSlider.setMaximum(180)
+        self.timeWindowSlider.setTickPosition(QtWidgets.QSlider.TicksBelow)
+        self.timeWindowSlider.setTickInterval(20)
+        self.timeWindowLayout.addWidget(self.timeWindowSlider)
+
+        self.timeWindowSpinBox = QtWidgets.QSpinBox()
+        self.timeWindowSpinBox.setMinimum(1)
+        self.timeWindowSpinBox.setMaximum(180)
+        self.timeWindowLayout.addWidget(self.timeWindowSpinBox)
+
+        # Add layouts to the group
+        self.cvRateLimiterLayout.addLayout(self.apiLimitLayout)
+        self.cvRateLimiterLayout.addLayout(self.timeWindowLayout)
+
+        # Set the layout for the group box
+        self.cvRateLimiterGroup.setLayout(self.cvRateLimiterLayout)
+        
+        # Find the tab that contains metadata options (tab index 4)
+        tab_layout = self.tabWidget.widget(4).layout()
+        if tab_layout:
+            tab_layout.addWidget(self.cvRateLimiterGroup)
+            
+        # Connect slider and spinbox for both controls
+        self.apiLimitSlider.valueChanged.connect(self.apiLimitSpinBox.setValue)
+        self.apiLimitSpinBox.valueChanged.connect(self.apiLimitSlider.setValue)
+        self.timeWindowSlider.valueChanged.connect(self.timeWindowSpinBox.setValue)
+        self.timeWindowSpinBox.valueChanged.connect(self.timeWindowSlider.setValue)
 
         if platform.system() == "Windows":
             self.lblRarHelp.setText(windowsRarHelp)
@@ -469,6 +536,12 @@ class SettingsWindow(QtWidgets.QDialog):
         self.cbxMergeListsMetadata.setChecked(self.config[0].Metadata_Options__metadata_merge_lists)
         self.cbxShortTagNames.setChecked(self.config[0].Metadata_Options__use_short_tag_names)
         self.cbxEnableCR.setChecked(self.config[0].Metadata_Options__cr)
+        
+        # Set ComicVine API Rate Limiter controls
+        self.apiLimitSlider.setValue(self.config[0].Metadata_Options__comicvine_api_limit)
+        self.apiLimitSpinBox.setValue(self.config[0].Metadata_Options__comicvine_api_limit)
+        self.timeWindowSlider.setValue(self.config[0].Metadata_Options__comicvine_time_window)
+        self.timeWindowSpinBox.setValue(self.config[0].Metadata_Options__comicvine_time_window)
 
         self.leRenameTemplate.setText(self.config[0].File_Rename__template)
         self.leIssueNumPadding.setText(str(self.config[0].File_Rename__issue_number_padding))
@@ -597,6 +670,10 @@ class SettingsWindow(QtWidgets.QDialog):
         self.config[0].Metadata_Options__tag_merge_lists = self.cbxTagsMergeLists.isChecked()
         self.config[0].Metadata_Options__metadata_merge_lists = self.cbxMergeListsMetadata.isChecked()
         self.config[0].Metadata_Options__cr = self.cbxEnableCR.isChecked()
+        
+        # Save ComicVine API Rate Limiter settings
+        self.config[0].Metadata_Options__comicvine_api_limit = self.apiLimitSpinBox.value()
+        self.config[0].Metadata_Options__comicvine_time_window = self.timeWindowSpinBox.value()
 
         # Update tag names if required
         if self.config[0].Metadata_Options__use_short_tag_names != self.cbxShortTagNames.isChecked():

@@ -159,8 +159,20 @@ class CVResult(TypedDict, Generic[T]):
 
 # https://comicvine.gamespot.com/forums/api-developers-2334/api-rate-limiting-1746419/
 # "Space out your requests so AT LEAST one second passes between each and you can make requests all day."
-custom_limiter = Limiter(RequestRate(10, 10), RequestRate(200, 1 * 60 * 60))
-default_limiter = Limiter(RequestRate(1, 10), RequestRate(100, 1 * 60 * 60))
+def get_custom_limiter(config):
+    """Create a rate limiter using user configuration settings."""
+    if not config or not hasattr(config[0], "Metadata_Options__comicvine_api_limit"):
+        # Use default values if config is not available
+        return Limiter(RequestRate(10, 10), RequestRate(200, 1 * 60 * 60))
+    
+    # Get user-configured values with fallbacks to defaults
+    api_limit = getattr(config[0], "Metadata_Options__comicvine_api_limit", 200)
+    time_window = getattr(config[0], "Metadata_Options__comicvine_time_window", 60)
+    
+    # Convert time window from minutes to seconds
+    time_window_seconds = time_window * 60
+    
+    return Limiter(RequestRate(10, 10), RequestRate(api_limit, time_window_seconds))
 
 
 class ComicVineTalker(ComicTalker):
@@ -178,9 +190,10 @@ class ComicVineTalker(ComicTalker):
         "more information.</p>"
     )
 
-    def __init__(self, version: str, cache_folder: pathlib.Path):
+    def __init__(self, version: str, cache_folder: pathlib.Path, config=None):
         super().__init__(version, cache_folder)
-        self.limiter = default_limiter
+        self.config = config
+        self.limiter = Limiter(RequestRate(1, 10), RequestRate(100, 1 * 60 * 60))
         # Default settings
         self.default_api_url = self.api_url = f"{self.website}/api/"
         self.default_api_key = self.api_key = "27431e6787042105bd3e47e169a624521f89f3a4"
@@ -227,9 +240,9 @@ class ComicVineTalker(ComicTalker):
 
         # Set a different limit if using the default API key
         if self.api_key == self.default_api_key:
-            self.limiter = default_limiter
+            self.limiter = Limiter(RequestRate(1, 10), RequestRate(100, 1 * 60 * 60))
         else:
-            self.limiter = custom_limiter
+            self.limiter = get_custom_limiter(self.config)
 
         return settings
 
@@ -240,7 +253,7 @@ class ComicVineTalker(ComicTalker):
         try:
             test_url = urljoin(url, "team/1/")
 
-            self.total_requests_made[test_url] += 1
+            self.total_requests_made[test_url.removeprefix(self.api_url)] += 1
             cv_response: CVResult = requests.get(  # type: ignore[type-arg]
                 test_url,
                 headers={"user-agent": "comictagger/" + self.version},
