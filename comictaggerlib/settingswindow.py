@@ -149,6 +149,7 @@ class SettingsWindow(QtWidgets.QDialog):
 
         self.config = config
         self.talkers = talkers
+        
         self.name = "Settings"
 
         # Create ComicVine API Rate Limiter UI controls
@@ -286,6 +287,25 @@ class SettingsWindow(QtWidgets.QDialog):
         self.lbl_plugin_dir.setText(
             f"Plugin Dir: <a href='file://{urllib.parse.quote(str(dirs.user_plugin_dir))}'>{dirs.user_plugin_dir}</a>"
         )
+
+        # Create appearance group box
+        self.appearanceGroupBox = QtWidgets.QGroupBox("Appearance")
+        self.appearanceLayout = QtWidgets.QVBoxLayout()
+        
+        # Dark mode is now forced, no need for a checkbox
+        # Add any other appearance settings here if needed
+        
+        self.appearanceGroupBox.setLayout(self.appearanceLayout)
+        
+        # Add to the General tab's layout
+        general_layout = self.tGeneral.layout()
+        if general_layout is None:
+            general_layout = QtWidgets.QVBoxLayout(self.tGeneral)
+            self.tGeneral.setLayout(general_layout)
+        
+        # Only add the appearance group if it has any children
+        if self.appearanceLayout.count() > 0:
+            general_layout.addWidget(self.appearanceGroupBox)
 
         # Set General as start tab
         self.tabWidget.setCurrentIndex(0)

@@ -11,6 +11,7 @@ import settngs
 
 from comictaggerlib.ctsettings import ct_ns
 from comictaggerlib.graphics import graphics_path
+from comictaggerlib.themes import apply_theme
 from comictalker.comictalker import ComicTalker
 
 logger = logging.getLogger("comictagger")
@@ -104,6 +105,10 @@ def open_tagger_window(
     if config[0].Runtime_Options__darkmode:
         args.extend(["-platform", "windows:darkmode=2"])
     app = Application(args)
+    
+    # Force dark theme regardless of setting
+    apply_theme(app, True)
+    
     if error is not None:
         show_exception_box(error[0])
         if error[1]:
